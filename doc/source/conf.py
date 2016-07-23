@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 PROJECT_NAME = 'JenkinsAPI'
 PROJECT_AUTHORS = "Salim Fadhley, Ramon van Alteren, Ruslan Lutsenko"
 PROJECT_EMAILS = 'salimfadhley@gmail.com, ramon@vanalteren.nl, ruslan.lutcenko@gmail.com'
-PROJECT_URL = "https://github.com/salimfadhley/jenkinsapi"
+PROJECT_URL = "https://github.com/pycontribs/jenkinsapi"
 SHORT_DESCRIPTION = 'A Python API for accessing resources on a Jenkins continuous-integration server.'
 # CHANGE THIS
 

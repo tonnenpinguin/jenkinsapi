@@ -42,7 +42,7 @@ Project Authors
  * Ramon van Alteren (ramon@vanalteren.nl)
  * Ruslan Lutsenko (ruslan.lutcenko@gmail.com)
 
-Current code lives on github: https://github.com/salimfadhley/jenkinsapi
+Current code lives on github: https://github.com/pycontribs/jenkinsapi
 
 """
 import sys

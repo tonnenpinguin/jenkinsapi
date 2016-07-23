@@ -31,10 +31,10 @@ Important Links
 ---------------
 
 Support & bug-reportst
-    https://github.com/salimfadhley/jenkinsapi/issues?direction=desc&sort=comments&state=open
+    https://github.com/pycontribs/jenkinsapi/issues?direction=desc&sort=comments&state=open
 
 Project source code
-    github: https://github.com/salimfadhley/jenkinsapi
+    github: https://github.com/pycontribs/jenkinsapi
 
 Project documentation
     https://jenkinsapi.readthedocs.org/en/latest/
@@ -137,7 +137,7 @@ JenkinsAPI is a pure-python project and can be improved with almost any programm
  	virtualenv jenkinsapi
  * Change to the new directory and check out the project code into the **src** subdirectory
  	cd jenkinsapi
- 	git clone https://github.com/salimfadhley/jenkinsapi.git src
+ 	git clone https://github.com/pycontribs/jenkinsapi.git src
  * Activate your jenkinsapi virtual environment::
  	cd bin
  	source activate

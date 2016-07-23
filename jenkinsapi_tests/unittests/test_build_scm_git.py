@@ -73,7 +73,7 @@ class test_build(unittest.TestCase):
                          'name': 'origin/unstable'}
                     ]
                 },
-                'remoteUrls': ['https://github.com/salimfadhley/jenkinsapi.git'],
+                'remoteUrls': ['https://github.com/pycontribs/jenkinsapi.git'],
                 'scmName': ''
             },
             {},

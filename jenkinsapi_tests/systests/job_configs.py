@@ -81,7 +81,7 @@ SCM_GIT_JOB = """
       <hudson.plugins.git.UserRemoteConfig>
         <name></name>
         <refspec></refspec>
-        <url>https://github.com/salimfadhley/jenkinsapi.git</url>
+        <url>https://github.com/pycontribs/jenkinsapi.git</url>
       </hudson.plugins.git.UserRemoteConfig>
     </userRemoteConfigs>
     <branches>
