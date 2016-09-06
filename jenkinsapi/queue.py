@@ -25,6 +25,11 @@ class Queue(JenkinsBase):
         self.jenkins = jenkins_obj
         JenkinsBase.__init__(self, baseurl)
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'items'
+        return super(Queue, self)._poll(tree=tree)
+
     def __str__(self):
         return self.baseurl
 
@@ -32,18 +37,18 @@ class Queue(JenkinsBase):
         return self.jenkins
 
     def iteritems(self):
-        for item in self._data['items']:
+        for item in self.poll(tree='items[id]')['items']:
             queue_id = item['id']
             item_baseurl = "%s/item/%i" % (self.baseurl, queue_id)
             yield item['id'], QueueItem(baseurl=item_baseurl,
                                         jenkins_obj=self.jenkins)
 
     def iterkeys(self):
-        for item in self._data['items']:
+        for item in self.poll(tree='items[id]')['items']:
             yield item['id']
 
     def itervalues(self):
-        for item in self._data['items']:
+        for item in self.poll('items')['items']:
             yield QueueItem(self.jenkins, **item)
 
     def keys(self):
@@ -53,7 +58,7 @@ class Queue(JenkinsBase):
         return list(self.itervalues())
 
     def __len__(self):
-        return len(self._data['items'])
+        return len(self.poll(tree='items[id]')['items'])
 
     def __getitem__(self, item_id):
         self_as_dict = dict(self.iteritems())
@@ -63,7 +68,8 @@ class Queue(JenkinsBase):
             raise UnknownQueueItem(item_id)
 
     def _get_queue_items_for_job(self, job_name):
-        for item in self._data["items"]:
+        all_items = self.poll('items[task[name],id]')['items']
+        for item in all_items:
             if item['task']['name'] == job_name:
                 yield QueueItem(self.get_queue_item_url(item),
                                 jenkins_obj=self.jenkins)
@@ -91,17 +97,22 @@ class QueueItem(JenkinsBase):
         self.jenkins = jenkins_obj
         JenkinsBase.__init__(self, baseurl)
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'id,task[name],why,actions,executable[number]'
+        return super(QueueItem, self)._poll(tree=tree)
+
     @property
     def queue_id(self):
-        return self._data['id']
+        return self.poll('id')['id']
 
     @property
     def name(self):
-        return self._data['task']['name']
+        return self.poll('task[name]')['task']['name']
 
     @property
     def why(self):
-        return self._data.get('why')
+        return self.poll('why')['why']
 
     def get_jenkins_obj(self):
         return self.jenkins
@@ -110,11 +121,11 @@ class QueueItem(JenkinsBase):
         """
         Return the job associated with this queue item
         """
-        return self.jenkins[self._data['task']['name']]
+        return self.jenkins[self.poll('task[name]')['task']['name']]
 
     def get_parameters(self):
         """returns parameters of queue item"""
-        actions = self._data.get('actions', [])
+        actions = self.poll('actions[parameters[name,value]]')['actions']
         for action in actions:
             if isinstance(action, dict) and 'parameters' in action:
                 parameters = action['parameters']
@@ -157,12 +168,12 @@ class QueueItem(JenkinsBase):
 
     def get_build_number(self):
         try:
-            return self._data['executable']['number']
+            return self.poll('executable[number]')['executable']['number']
         except KeyError:
             raise NotBuiltYet()
 
     def get_job_name(self):
         try:
-            return self._data['task']['name']
+            return self.poll('task[name]')['task']['name']
         except KeyError:
             raise NotBuiltYet()

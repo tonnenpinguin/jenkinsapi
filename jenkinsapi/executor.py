@@ -29,6 +29,11 @@ class Executor(JenkinsBase):
         self.baseurl = baseurl
         JenkinsBase.__init__(self, baseurl)
 
+    def _poll(self, tree):
+        if not tree:
+            tree = 'number'
+        return super(Executor, self)._poll(tree=tree)
+
     def __str__(self):
         return '%s %s' % (self.nodename, self.number)
 

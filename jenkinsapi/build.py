@@ -33,12 +33,10 @@ log = logging.getLogger(__name__)
 
 
 class Build(JenkinsBase):
-
     """
     Represents a jenkins build, executed in context of a job.
     """
 
-    STR_TOTALCOUNT = "totalCount"
     STR_TPL_NOTESTS_ERR = ("%s has status %s, and does not have "
                            "any test results")
 
@@ -62,33 +60,37 @@ class Build(JenkinsBase):
         # upstream builds so we override the poll to get at the extra
         # data for build objects
         url = self.python_api_url(self.baseurl)
+        if tree is None:
+            tree = 'number'
         return self.get_data(url, params={'depth': self.depth}, tree=tree)
 
     def __str__(self):
-        return self._data['fullDisplayName']
+        return self.poll(
+            tree='fullDisplayName'
+        )['fullDisplayName']
 
     @property
     def name(self):
         return str(self)
 
     def get_description(self):
-        return self._data["description"]
+        return self.poll(tree='description')["description"]
 
     def get_number(self):
-        return self._data["number"]
+        return self.poll(tree='number')["number"]
 
     def get_status(self):
-        return self._data["result"]
+        return self.poll(tree='result')["result"]
 
     def get_slave(self):
-        return self._data["builtOn"]
+        return self.poll(tree='builtOn')["builtOn"]
 
     def get_revision(self):
-        vcs = self._data['changeSet']['kind'] or 'git'
+        vcs = self._poll(tree='changeSet[kind]')['changeSet']['kind'] or 'git'
         return getattr(self, '_get_%s_rev' % vcs, lambda: None)()
 
     def get_revision_branch(self):
-        vcs = self._data['changeSet']['kind'] or 'git'
+        vcs = self._poll(tree='changeSet[kind]')['kind'] or 'git'
         return getattr(self, '_get_%s_rev_branch' % vcs, lambda: None)()
 
     def get_changeset_items(self):
@@ -116,7 +118,7 @@ class Build(JenkinsBase):
             "user": "username"
         }
         """
-        if 'items' in self._data['changeSet']:
+        if 'items' in self.poll(tree='changeset[items]')['changeSet']:
             return self._data['changeSet']['items']
         else:
             return []
@@ -126,14 +128,15 @@ class Build(JenkinsBase):
             "This untested function may soon be removed from Jenkinsapi "
             "(get_svn_rev).")
         maxRevision = 0
-        for repoPathSet in self._data["changeSet"]["revisions"]:
+        for repoPathSet in self.poll(
+                tree='changeset[revisions]')["changeSet"]["revisions"]:
             maxRevision = max(repoPathSet["revision"], maxRevision)
         return maxRevision
 
     def _get_git_rev(self):
         # Sometimes we have None as part of actions. Filter those actions
         # which have lastBuiltRevision in them
-        _actions = [x for x in self._data['actions']
+        _actions = [x for x in self.poll(tree='actions')['actions']
                     if x and "lastBuiltRevision" in x]
 
         if len(_actions) > 0:
@@ -146,7 +149,8 @@ class Build(JenkinsBase):
             "This untested function may soon be removed from Jenkinsapi "
             "(_get_hg_rev).")
         return [x['mercurialNodeName']
-                for x in self._data['actions'] if 'mercurialNodeName' in x][0]
+                for x in self.poll(
+                    tree='actions')['actions'] if 'mercurialNodeName' in x][0]
 
     def _get_svn_rev_branch(self):
         raise NotImplementedError('_get_svn_rev_branch is not yet implemented')
@@ -154,7 +158,7 @@ class Build(JenkinsBase):
     def _get_git_rev_branch(self):
         # Sometimes we have None as part of actions. Filter those actions
         # which have lastBuiltRevision in them
-        _actions = [x for x in self._data['actions']
+        _actions = [x for x in self.poll(tree='actions')['actions']
                     if x and "lastBuiltRevision" in x]
 
         return _actions[0]["lastBuiltRevision"]["branch"]
@@ -163,7 +167,8 @@ class Build(JenkinsBase):
         raise NotImplementedError('_get_hg_rev_branch is not yet implemented')
 
     def get_duration(self):
-        return datetime.timedelta(milliseconds=self._data["duration"])
+        return datetime.timedelta(
+            milliseconds=self.poll(tree='duration')["duration"])
 
     def get_artifacts(self):
         data = self.poll(tree='artifacts[relativePath,fileName]')
@@ -184,7 +189,9 @@ class Build(JenkinsBase):
         :return: String or None
         """
         try:
-            return self.get_actions()['causes'][0]['upstreamProject']
+            return self.get_actions(
+                tree='actions[causes[upstreamProject]]'
+            )['causes'][0]['upstreamProject']
         except KeyError:
             return None
 
@@ -204,7 +211,9 @@ class Build(JenkinsBase):
         :return: int or None
         """
         try:
-            return int(self.get_actions()['causes'][0]['upstreamBuild'])
+            return int(self.get_actions(
+                'actions[causes[upstreamBuild]]'
+            )['causes'][0]['upstreamBuild'])
         except KeyError:
             return None
 
@@ -225,7 +234,9 @@ class Build(JenkinsBase):
         :return: String or None
         """
         try:
-            return self.get_actions()['parameters'][0]['value']
+            return self.get_actions(
+                'actions[parameters]'
+            )['parameters'][0]['value']
         except KeyError:
             return None
 
@@ -251,7 +262,9 @@ class Build(JenkinsBase):
             "This untested function may soon be removed from Jenkinsapi "
             "(get_master_build_number).")
         try:
-            return int(self.get_actions()['parameters'][1]['value'])
+            return int(self.get_actions(
+                'actions[parameters[value]]'
+            )['parameters'][1]['value'])
         except KeyError:
             return None
 
@@ -294,7 +307,7 @@ class Build(JenkinsBase):
         downstream_job_names = self.job.get_downstream_job_names()
         downstream_names = []
         try:
-            fingerprints = self._data["fingerprint"]
+            fingerprints = self.poll(tree='fingerprint')["fingerprint"]
             for fingerprint in fingerprints:
                 for job_usage in fingerprint['usage']:
                     if job_usage['name'] in downstream_job_names:
@@ -311,7 +324,7 @@ class Build(JenkinsBase):
         downstream_job_names = self.get_downstream_job_names()
         downstream_builds = []
         try:
-            fingerprints = self._data["fingerprint"]
+            fingerprints = self.poll(tree='fingerprint')["fingerprint"]
             for fingerprint in fingerprints:
                 for job_usage in fingerprint['usage']:
                     if job_usage['name'] in downstream_job_names:
@@ -331,17 +344,20 @@ class Build(JenkinsBase):
         matrix configuration
         :return: Generator of Build
         """
-        if 'runs' in self._data:
-            for rinfo in self._data['runs']:
+        state = self.poll(tree='runs[number,url],number')
+        # FIXME: make function out of that if
+        if 'runs' in state and len(state['runs']) != 0 \
+                and len(state['runs'][0]) != 0:
+            for rinfo in state['runs']:
                 number = rinfo['number']
-                if number == self._data['number']:
+                if number == state['number']:
                     yield Build(rinfo['url'], number, self.job)
 
     def is_running(self):
         """
         Return a bool if running.
         """
-        data = self.poll(tree='building')
+        data = self.poll(tree='building,fullDisplayName')
         return data.get('building', False)
 
     def block(self):
@@ -354,7 +370,7 @@ class Build(JenkinsBase):
         If the build is still running, return False.
         """
         return (not self.is_running()) and \
-            self._data["result"] == STATUS_SUCCESS
+            self.poll(tree='result')["result"] == STATUS_SUCCESS
 
     def block_until_complete(self, delay=15):
         assert isinstance(delay, int)
@@ -375,19 +391,19 @@ class Build(JenkinsBase):
         Return the URL for the object which provides the job's result summary.
         """
         url_tpl = r"%stestReport/%s"
-        return url_tpl % (self._data["url"], config.JENKINS_API)
+        return url_tpl % (self.poll(tree='url')["url"], config.JENKINS_API)
 
     def get_resultset(self):
         """
         Obtain detailed results for this build.
         """
         result_url = self.get_result_url()
-        if self.STR_TOTALCOUNT not in self.get_actions():
+        if 'totalCount' not in self.get_actions('actions[totalCount]'):
             raise NoResults(
                 "%s does not have any published results" %
                 str(self))
         buildstatus = self.get_status()
-        if not self.get_actions()[self.STR_TOTALCOUNT]:
+        if not self.get_actions('actions[totalCount]')['totalCount']:
             raise NoResults(
                 self.STR_TPL_NOTESTS_ERR %
                 (str(self), buildstatus))
@@ -398,15 +414,16 @@ class Build(JenkinsBase):
         """
         Return a boolean, true if a result set is available. false if not.
         """
-        return self.STR_TOTALCOUNT in self.get_actions()
+        return 'totalCount' in self.get_actions('actions[totalCount]')
 
-    def get_actions(self):
-        all_actions = {}
-        for dct_action in self._data["actions"]:
+    def get_actions(self, tree):
+        all_actions = self.poll(tree=tree)
+        actions = {}
+        for dct_action in all_actions["actions"]:
             if dct_action is None:
                 continue
-            all_actions.update(dct_action)
-        return all_actions
+            actions.update(dct_action)
+        return actions
 
     def get_causes(self):
         '''
@@ -416,7 +433,7 @@ class Build(JenkinsBase):
         dict. Empty ones are ignored.
         '''
         all_causes = []
-        for dct_action in self._data["actions"]:
+        for dct_action in self.poll(tree='actions[causes]')["actions"]:
             if dct_action is None:
                 continue
             if 'causes' in dct_action and dct_action['causes']:
@@ -429,7 +446,8 @@ class Build(JenkinsBase):
         '''
         # Java timestamps are given in miliseconds since the epoch start!
         naive_timestamp = datetime.datetime(
-            *time.gmtime(self._data['timestamp'] / 1000.0)[:6])
+            *time.gmtime(
+                self.poll(tree='timestamp')['timestamp'] / 1000.0)[:6])
         return pytz.utc.localize(naive_timestamp)
 
     def get_console(self):

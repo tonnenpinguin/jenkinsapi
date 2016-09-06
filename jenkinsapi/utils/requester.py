@@ -100,6 +100,18 @@ class Requester(object):
             allow_redirects=allow_redirects,
             stream=stream
         )
+        # Below code is used to detect access to bare api/python
+        # if 'api/python' in url:
+        #     if 'params' in requestKwargs:
+        #         if 'tree' not in requestKwargs['params'] and \
+        #                 'depth' not in requestKwargs['params']:
+        #             import pudb; pudb.set_trace()  # XXX BREAKPOINT
+        #             print url
+        #     else:
+        #         if 'tree' not in url and 'depth' not in url:
+        #             import pudb; pudb.set_trace()  # XXX BREAKPOINT
+        #             print url
+
         return requests.get(self._update_url_scheme(url), **requestKwargs)
 
     def post_url(self, url, params=None, data=None, files=None,

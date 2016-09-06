@@ -23,6 +23,17 @@ class View(JenkinsBase):
         JenkinsBase.__init__(self, url)
         self.deleted = False
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'jobs[name,url]'
+        return super(View, self)._poll(tree=tree)
+
+    def poll(self, tree=None):
+        data = self._poll(tree=tree)
+        self._data = data
+        if tree:
+            return data
+
     def __str__(self):
         return self.name
 
@@ -66,9 +77,9 @@ class View(JenkinsBase):
         return [a for a in self.iteritems()]
 
     def _get_jobs(self):
-        if 'jobs' in self._data:
-            for viewdict in self._data["jobs"]:
-                yield viewdict["name"], viewdict["url"]
+        state = self.poll('jobs[name,url]')['jobs']
+        for viewdict in state:
+            yield viewdict["name"], viewdict["url"]
 
     def get_job_dict(self):
         return dict(self._get_jobs())
@@ -132,7 +143,7 @@ class View(JenkinsBase):
         return True
 
     def _get_nested_views(self):
-        for viewdict in self._data.get("views", []):
+        for viewdict in self.poll('views[name,url]')['views']:
             yield viewdict["name"], viewdict["url"]
 
     def get_nested_view_dict(self):

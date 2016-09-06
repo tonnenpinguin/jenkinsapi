@@ -25,6 +25,11 @@ class Executors(JenkinsBase):
         JenkinsBase.__init__(self, baseurl)
         self.count = self._data['numExecutors']
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'numExecutors'
+        return super(Executors, self)._poll(tree=tree)
+
     def __str__(self):
         return 'Executors @ %s' % self.baseurl
 

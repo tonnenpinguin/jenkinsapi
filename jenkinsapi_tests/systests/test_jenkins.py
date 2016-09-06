@@ -163,9 +163,9 @@ class JobTests(BaseSystemTest):
         self.assertIsInstance(j, Job)
         self.assertEquals(j.name, copied_job_name)
 
-    def test_get_master_data(self):
-        master_data = self.jenkins.get_master_data()
-        self.assertEquals(master_data['totalExecutors'], 2)
+    # def test_get_master_data(self):
+    #     master_data = self.jenkins.get_master_data()
+    #     self.assertEquals(master_data['totalExecutors'], 2)
 
     def test_get_missing_plugin(self):
         plugins = self.jenkins.get_plugins()

@@ -71,7 +71,7 @@ class Job(JenkinsBase, MutableJenkinsThing):
             None: lambda element_tree: []
         }
         self.url = url
-        JenkinsBase.__init__(self, self.url)
+        super(Job, self).__init__(self.url)
 
     def __str__(self):
         return self.name
@@ -94,6 +94,11 @@ class Job(JenkinsBase, MutableJenkinsThing):
             branches.append(hg_default_branch)
         return branches
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'builds,actions[parameterDefinitions],property'
+        return super(Job, self)._poll(tree=tree)
+
     def poll(self, tree=None):
         data = super(Job, self).poll(tree=tree)
         if not tree:
@@ -111,7 +116,8 @@ class Job(JenkinsBase, MutableJenkinsThing):
         all builds information. This method checks if all builds are loaded
         in the data object and updates it with the missing builds if needed.
         """
-        if not data.get("builds"):
+        if not data.get("builds") or \
+                len(data['builds']) == 0 or len(data['builds'][0]) == 0:
             return data
         # do not call _buildid_for_type here: it would poll and do an infinite
         # loop
@@ -551,7 +557,8 @@ class Job(JenkinsBase, MutableJenkinsThing):
         """
         downstream_jobs = []
         try:
-            for j in self._data['downstreamProjects']:
+            for j in self.poll(
+                    tree='downstreamProjects[name]')['downstreamProjects']:
                 downstream_jobs.append(
                     self.get_jenkins_obj()[j['name']])
         except KeyError:
@@ -565,7 +572,8 @@ class Job(JenkinsBase, MutableJenkinsThing):
         """
         downstream_jobs = []
         try:
-            for j in self._data['downstreamProjects']:
+            for j in self.poll(
+                    tree='downstreamProjects[name]')['downstreamProjects']:
                 downstream_jobs.append(j['name'])
         except KeyError:
             return []
@@ -578,7 +586,8 @@ class Job(JenkinsBase, MutableJenkinsThing):
         """
         upstream_jobs = []
         try:
-            for j in self._data['upstreamProjects']:
+            for j in self.poll(
+                    tree='upstreamProjects[name]')['upstreamProjects']:
                 upstream_jobs.append(j['name'])
         except KeyError:
             return []
@@ -591,7 +600,8 @@ class Job(JenkinsBase, MutableJenkinsThing):
         """
         upstream_jobs = []
         try:
-            for j in self._data['upstreamProjects']:
+            for j in self.poll(
+                    tree='upstreamProjects[name]')['upstreamProjects']:
                 upstream_jobs.append(self.get_jenkins_obj().get_job(j['name']))
         except KeyError:
             return []
@@ -618,7 +628,7 @@ class Job(JenkinsBase, MutableJenkinsThing):
         """
         if not self.is_queued():
             raise NotInQueue()
-        queue_id = self._data['queueItem']['id']
+        queue_id = self.poll('queueItem[id]')['queueItem']['id']
         url = urlparse.urljoin(self.get_jenkins_obj().get_queue().baseurl,
                                'queue/cancelItem?id=%s' % queue_id)
         self.get_jenkins_obj().requester.post_and_confirm_status(url, data='')

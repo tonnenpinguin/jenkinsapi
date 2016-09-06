@@ -45,7 +45,8 @@ class Fingerprint(JenkinsBase):
         error).
         """
         try:
-            self.poll()
+            self.poll(
+                tree='original[name,number],usage[ranges[ranges[start,end]]]')
             self.unknown = False
         except requests.exceptions.HTTPError as err:
             # We can't really say anything about the validity of

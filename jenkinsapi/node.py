@@ -93,6 +93,11 @@ class Node(JenkinsBase):
         self._element_tree = None
         self._config = None
 
+    def _poll(self, tree):
+        if tree is None:
+            tree = 'name,offline,temporarilyOffline'
+        return super(Node, self)._poll(tree=tree)
+
     def get_node_attributes(self):
         """
         Gets node attributes as dict
@@ -189,10 +194,10 @@ class Node(JenkinsBase):
         return self.poll(tree='temporarilyOffline')['temporarilyOffline']
 
     def is_jnlpagent(self):
-        return self._data['jnlpAgent']
+        return self.poll(tree='jnlpAgent')['jnlpAgent']
 
     def is_idle(self):
-        return self._data['idle']
+        return self.poll(tree='idle')['idle']
 
     def set_online(self):
         """
@@ -202,18 +207,18 @@ class Node(JenkinsBase):
         and AssertionError raised.
         If after run node state has not been changed raise AssertionError.
         """
-        self.poll()
+        state = self.poll(tree='offline,temporarilyOffline')
         # Before change state check if client is connected
-        if self._data['offline'] and not self._data['temporarilyOffline']:
+        if state['offline'] and not state['temporarilyOffline']:
             raise AssertionError("Node is offline and not marked as "
                                  "temporarilyOffline, check client "
                                  "connection: offline = %s, "
                                  "temporarilyOffline = %s" %
-                                 (self._data['offline'],
-                                  self._data['temporarilyOffline']))
-        elif self._data['offline'] and self._data['temporarilyOffline']:
+                                 (state['offline'],
+                                  state['temporarilyOffline']))
+        elif state['offline'] and state['temporarilyOffline']:
             self.toggle_temporarily_offline()
-            if self._data['offline']:
+            if self.poll(tree='offline')['offline']:
                 raise AssertionError("The node state is still offline, "
                                      "check client connection:"
                                      " offline = %s, "
@@ -228,14 +233,15 @@ class Node(JenkinsBase):
         : param message: optional string explain why you are taking this
             node offline
         """
-        if not self._data['offline']:
+        state = self.poll(tree='offline,temporarilyOffline')
+        if not state['offline']:
             self.toggle_temporarily_offline(message)
-            data = self.poll(tree='offline,temporarilyOffline')
-            if not data['offline']:
+            state = self.poll(tree='offline,temporarilyOffline')
+            if not state['offline']:
                 raise AssertionError("The node state is still online:" +
                                      "offline = %s , temporarilyOffline = %s" %
-                                     (data['offline'],
-                                      data['temporarilyOffline']))
+                                     (state['offline'],
+                                      state['temporarilyOffline']))
 
     def toggle_temporarily_offline(self, message="requested from jenkinsapi"):
         """

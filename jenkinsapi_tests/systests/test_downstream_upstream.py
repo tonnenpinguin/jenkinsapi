@@ -94,7 +94,8 @@ class TestDownstreamUpstream(BaseSystemTest):
 
     def test_stream_relationship(self):
         """
-        Can we keep track of the relationships between upstream & downstream jobs?
+        Can we keep track of the relationships between upstream &
+        downstream jobs?
         """
         for job_name, job_config in JOB_CONFIGS.items():
             self.jenkins.create_job(job_name, job_config)

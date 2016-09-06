@@ -30,6 +30,11 @@ class Nodes(JenkinsBase):
         self.jenkins = jenkins_obj
         JenkinsBase.__init__(self, baseurl)
 
+    def _poll(self, tree=None):
+        if tree is None:
+            tree = 'computer[displayName]'
+        return super(Nodes, self)._poll(tree=tree)
+
     def get_jenkins_obj(self):
         return self.jenkins
 

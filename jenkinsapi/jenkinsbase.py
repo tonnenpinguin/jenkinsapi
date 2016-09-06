@@ -59,9 +59,8 @@ class JenkinsBase(object):
         data = self._poll(tree=tree)
         if 'jobs' in data:
             data['jobs'] = self.resolve_job_folders(data['jobs'])
-        if not tree:
-            self._data = data
-        else:
+        self._data = data
+        if tree:
             return data
 
     def _poll(self, tree=None):
