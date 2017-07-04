@@ -83,6 +83,8 @@ class Build(JenkinsBase):
 
     def get_revision(self):
         if 'changeSets' in self._data:
+            if not self._data['changeSets']:
+                return None
             vcs = self._data['changeSets'][0]['kind'] or 'git'
         else:
             vcs = self._data['changeSet']['kind'] or 'git'
@@ -138,7 +140,8 @@ class Build(JenkinsBase):
         """
         if 'items' in self._data['changeSet']:
             return self._data['changeSet']['items']
-        return []
+        else:
+            return []
 
     def _get_svn_rev(self):
         warnings.warn(
@@ -155,7 +158,7 @@ class Build(JenkinsBase):
         _actions = [x for x in self._data['actions']
                     if x and "lastBuiltRevision" in x]
 
-        if _actions:
+        if len(_actions) > 0:
             return _actions[0]["lastBuiltRevision"]["SHA1"]
 
         return None
@@ -218,7 +221,8 @@ class Build(JenkinsBase):
         """
         if self.get_upstream_job_name():
             return self.get_jenkins_obj().get_job(self.get_upstream_job_name())
-        return None
+        else:
+            return None
 
     def get_upstream_build_number(self):
         """
@@ -238,8 +242,8 @@ class Build(JenkinsBase):
         upstream_job = self.get_upstream_job()
         if upstream_job:
             return upstream_job.get_build(self.get_upstream_build_number())
-
-        return None
+        else:
+            return None
 
     def get_master_job_name(self):
         """
@@ -261,8 +265,8 @@ class Build(JenkinsBase):
             "(get_master_job).")
         if self.get_master_job_name():
             return self.get_jenkins_obj().get_job(self.get_master_job_name())
-
-        return None
+        else:
+            return None
 
     def get_master_build_number(self):
         """
@@ -288,8 +292,8 @@ class Build(JenkinsBase):
         master_job = self.get_master_job()
         if master_job:
             return master_job.get_build(self.get_master_build_number())
-
-        return None
+        else:
+            return None
 
     def get_downstream_jobs(self):
         """
@@ -332,7 +336,7 @@ class Build(JenkinsBase):
         """
         downstream_job_names = self.get_downstream_job_names()
         downstream_builds = []
-        try:  # pylint: disable=R1702
+        try:
             fingerprints = self._data["fingerprint"]
             for fingerprint in fingerprints:
                 for job_usage in fingerprint['usage']:
@@ -469,16 +473,6 @@ class Build(JenkinsBase):
             return content.decode('ISO-8859-1')
         else:
             raise JenkinsAPIException('Unknown content type for console')
-
-    def get_estimated_duration(self):
-        """
-        Return the estimated build duration (in seconds) or none.
-        """
-        try:
-            eta_ms = self._data["estimatedDuration"]
-            return max(0, eta_ms / 1000.0)
-        except KeyError:
-            return None
 
     def stop(self):
         """
