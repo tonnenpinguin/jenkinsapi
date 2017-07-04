@@ -82,7 +82,10 @@ class Build(JenkinsBase):
         return self._data["builtOn"]
 
     def get_revision(self):
-        vcs = self._data['changeSet']['kind'] or 'git'
+        if 'changeSets' in self._data:
+            vcs = self._data['changeSets'][0]['kind'] or 'git'
+        else:
+            vcs = self._data['changeSet']['kind'] or 'git'
         return getattr(self, '_get_%s_rev' % vcs, lambda: None)()
 
     def get_revision_branch(self):
@@ -173,7 +176,10 @@ class Build(JenkinsBase):
         _actions = [x for x in self._data['actions']
                     if x and "lastBuiltRevision" in x]
 
-        return _actions[0]["lastBuiltRevision"]["branch"]
+        _branch = _actions[0]["lastBuiltRevision"]["branch"]
+        if isinstance(_branch, list):
+            _branch = _branch[0]
+        return _branch
 
     def _get_hg_rev_branch(self):
         raise NotImplementedError('_get_hg_rev_branch is not yet implemented')
